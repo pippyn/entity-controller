@@ -1,8 +1,9 @@
 # Introduction
-This implementation of motion activated lighting implements a finite state machine to ensure that `MotionLight`s do not interfere with the rest of your home automation setup. The use cases for this component are endless because you can use any entity as inputs (there is no restriction to motion sensors and lights).
+This implementation of motion activated lighting implements a finite state machine to ensure that EntityController does not interfere with the rest of your home automation setup. The use cases for this component are endless because you can use any entity as inputs (there is no restriction to motion sensors and lights).
 
-**Latest stable version `v2.4.9` tested on Home Assistant `v0.87.0`.**
+**Latest stable version `v3.0.0` tested on Home Assistant `v0.88.0`.**
 
+[Donate to support development and show appreciation](https://www.gofundme.com/danobot&rcid=r01-155117647299-36f7aa9cb3544199&pc=ot_co_campmgmt_w)
 
 ![Lighting SM State Diagram](images/lighting_sm.png)
 # Requirements
@@ -19,8 +20,8 @@ That last one can be separated into the following two requirements:
 
 This component is by far the most elegant solution I have found for this problem.
 
-# Breaking Changes
-The application was converted to a native Home Assistant component. Appdaemon is no longer required. To receive future updates, update your HA configuration by adding the `lightingsm` top-level configuration key and inside a list of motion lights as shown in the examples below.
+# Breaking Changes in `v3.0.0`
+The component has been renamed to `entity_controller` and migrated to the new file/directory format. To update your configuration, hard-replace `lightingsm` with `entity_controller` in your YAML and Lovelace configuration. The directory/file format change may require you go into your `custom_components` folder and manually remove the `lightingsm.py` file and create the new directory structure.
 
 # Configuration
 The app is quite configurable. In its most basic form, you can define the following.
@@ -29,13 +30,13 @@ The app is quite configurable. In its most basic form, you can define the follow
 |---|---|
 |`sensor` entities| Used as triggers. When these entities turn on, your `control` entities will be switched on|
 |`control` entities| The entities you wish to switch on and off depending on `sensor` entity states.|
-|`state` entities|Unless you wish to use scenes, you need not worry about `state` entities. Essentially, they allow you to define specific entities that will be used for state observation *in cases where `control` entities do not supply a usable state*. Optional.|
-|`override` entities| The entities used to override the entire lightingsm logic. Optional.|
+|`state` entities|Unless you wish to use scenes, you need not worry about `state` entities. Essentially, they allow you to define specific entities that will be used for state observation *in cases where `control` entities do not supply a usable state*. (As is the case with `scene`.) Optional.|
+|`override` entities| The entities used to override the entire EntityController logic. Optional.|
 ## Basic Configuration
-`MotionLight` needs `sensors` to monitor (such as motion detectors, binary switches, doors, etc) as well as an entity to control (such as a light).
+The controller needs `sensors` to monitor (such as motion detectors, binary switches, doors, etc) as well as an entity to control (such as a light).
 
 ```yaml
-lightingsm:
+entity_controller:
   motion_light:
     sensor: binary_sensor.living_room_motion  # required, [sensors]
     entity: light.table_lamp                  # required, [entity,entities,entity_on]
@@ -62,7 +63,7 @@ motion_light_sun:
 ```
 
 ### Home Assistant State Entities
-Since `v1.1.0`, the app creates and updates entities representing the motion light itself. Beyond basic state (e.g. active, idle, disabled, etc.), this provides additional  state attributes as shown below.
+Since `v1.1.0`, the app creates and updates entities representing the EntityController itself. Beyond basic state (e.g. active, idle, disabled, etc.), this provides additional  state attributes as shown below.
 
 ![HASS Entity State Attributes 1](images/state_attributes_1.png)
 ![HASS Entity State Attributes 2](images/state_attributes_2.png)
@@ -86,7 +87,7 @@ override_example:
     - input_boolean.bedroom_motion_trigger
 ```
 
-**Note:** `input_boolean`s can be controlled in automations via the `input_boolean.turn_on`, `input_boolean.turn_off` and `input_boolean.toggle` services. This allows you to enable/disable your app based on automations! Services will be implemented in the future such as `lightingsm/enable` for a specific `entity_id`.
+**Note:** `input_boolean`s can be controlled in automations via the `input_boolean.turn_on`, `input_boolean.turn_off` and `input_boolean.toggle` services. This allows you to enable/disable your app based on automations! Services will be implemented in the future such as `entity_controller/enable` for a specific `entity_id`.
 
 
 ### Night Mode
@@ -116,11 +117,24 @@ By default, the app assumes you have a Type 1 motion sensor (event based), these
 
 In the future, there will be support for listening to HA events as well, which means the need to create 'dummy' `binary_sensors` for motion sensors is removed.
 
-If your sensor emits both `on` and `off` signals, then add `sensor_type_duration: True` to your configuration. This can be useful for motion sensors, door sensors and locks (not an exhaustive list).
+If your sensor emits both `on` and `off` signals, then add `sensor_type: duration` to your configuration. This can be useful for motion sensors, door sensors and locks (not an exhaustive list).
 
 Control entities are turned off when the following events occur (whichever happens last)
   * the timer expires and sensor is off
   * the sensor state changes to `off` and timer already expired
+
+If you want the timer to be restarted one last time when the sensor returns to `off`, then add `sensor_resets_timer: True` to your entity configuration.
+
+Notation: `[ ]` indicate internal, `( )` indicates external, `...` indicates passage of time, `->` Indicates related action
+
+**Normal sensor**
+Idle -> Active Timer -> [timer started] ... [timer expires] -> Idle
+
+**Duration Sensor**
+Idle -> Active Timer - [timer started] ... **[Timer expires] ... (sensor goes to off)** -> Idle
+
+**With `sensor_resets_timer`**
+Idle -> Active Timer -> [timer started] ... [original timer expires] ... (sensor goes to off) ... **[timer restarted] .. [timer expires]** -> Idle
 
 ## Advanced Configuration
 ### Specifying Custom Service Call Parameters
@@ -148,17 +162,69 @@ motion_light:
   entity_off: script.fade_out_led           # required if `turn_off` does not work on `entity_on`
   
 ```
+### Block Mode Time Restriction
+When `block_timeout` is defined, the controller will start a timer when the sensor is triggered and exit `blocked` state once the timeout is reached, thereby restricting the time that a controller can stay `blocked` mode. This is useful when you want the controller to turn off a light that was turned on manually.
+
+The state sequence is as follows:
+
+**Without block_timeout:**
+Idle ... (sensor ON) -> Blocked ... **(control entity OFF)** -> Idle
+  
+**With block_timeout:**
+Idle ... (sensor ON) -> Blocked ... **(sensor ON) -> [Timer started] ... [Timer expires]** -> Idle
+
+
+
+**Example configuration:**
+```yaml
+blocked_mode_demo:
+  sensor: binary_sensor.living_room_motion
+  entity: light.lounge_lamp
+  block_timeout: 160                        # in seconds (like all other time measurements)
+```
+
+**Note 1:** A controller enters the `blocked` state when a control entity is `on` while a sensor entity is triggered. This means the timer is not started at the moment the light is switched on. Instead, it is started when the sensor is activated. Therefore, if the light is turned off before the controller ever entered `blocked` mode, then the controller remains in `idle` state.
+
+**Note 2:** The entity controller component is designed to avoid any interference with external automations that might affect control entities. Using the `block_timeout` directly violates this principle. If you see unintended interference, reconsider your configuration and remove the `block_timeout` functionality if necessary.
+
+The easiest way to make sense of it is to set up a configuration and explore the different scenarios through every day use. Then re-read the explanation in this document and it will (hopefully) make sense.
+
 ### State Entities
-It is possible to separate control entities and state entities. **Control entities** are the entities that are being turned on and off by LightingSM. **State entities**, on the other hand, are used to observe state. In a basic configuration, your control entities are the same as your state entities (handled internally).
+It is possible to separate control entities and state entities. **Control entities** are the entities that are being turned on and off by EntityController. **State entities**, on the other hand, are used to observe state. In a basic configuration, your control entities are the same as your state entities (handled internally).
 
 The notion of separate `state entities` allows you to keep the entity that is being controlled separate from the one that is being observed.
 
 Since the release of `v1.0.0` and the introduction of `override` entities, the real use case for `state_entities` is difficult to define.
 
+**Example 1**
+One example is my porch light shown below:
 
-You can use the config key `entities` and `state_entities` to define these. For example, the configuration below will trigger based on the supplied sensors, the entities defined in `entities` will turn on if and only if all `state_entities` states are `false`. The `control` entity is a `scene` which does not provide useful state information as it is in `scening` state at all times.
+```yaml
+  mtn_porch:
+    sensors: 
+      - sensor.cam_front_motion_detected
+    entities:
+      - light.porch_light
+      - script.buzz_doorbell
+```
 
-(This is the only use case for `state_entities` I have found so far. Please let me know if there are more.)
+The control entities contains a mix of entities from different domains. The state of the script entitity is non-sensical and causes issues. The controller enters active state, turns on control entities and then immediately leaves active state (going back to idle). This is because the state of the script is interpreted after turn on.
+
+In this case, you need to tell the controller exactly which entitty to observe for state. 
+```yaml
+  mtn_porch:
+    sensors: 
+      - binary_sensor.front_motion_detected
+    entities:
+      - light.porch_light
+      - script.buzz_doorbell
+    state_entities:
+      - light.porch_light
+```
+**Example 2**
+The configuration below will trigger based on the supplied sensors, the entities defined in `entities` will turn on if and only if all `state_entities` states are `false`. The `control` entity is a `scene` which does not provide useful state information as it is in `scening` state at all times.
+
+In general, you can use the config key `entities` and `state_entities` to specify these. For example, 
 
 ```yaml
 mtn_lounge:
@@ -171,7 +237,7 @@ mtn_lounge:
   delay: 300
 ```
 
-**Note:** Using state entities can have unexpected consequences. For example, if you state entities do not overlap with control entities then your control entities will never turn off. Use this advanced feature at your own risk. If you have problems, make your state entities the same as your control entities
+**Note:** Using state entities can have unexpected consequences. For example, if you state entities do not overlap with control entities then your control entities will never turn off. This is the culprit of _advanced configurations_, use at your own risk. If you have problems, make your state entities the same as your control entities, and stick to state entities with a clear state (such as lights, media players etc.)
 
 ### Customising State Strings
 The following code extract shows the default state strings that were made to represent the `on` and `off` states. These defaults can be overwritten for all entity types using the configuration keys `state_strings_on` and `state_strings_off`. For more granular control, use the entity specific configuration keys shown in the code extract below.
@@ -211,7 +277,7 @@ diagram_test:
 |active|Momentary, intermediate state to `active_timer`. You won't see this state much as all.|
 |active_timer|Control entities have been switched on and timer is running|
 |overridden|Entity is overridden by an `override_entity`|
-|blocked|Entities in this state wanted to turn on but were blocked because one or more `state_entities` are already in an `on` state. Entity will return to idle state once all `control_entites` (or `state_entities`, if configured) return to `off` state|
+|blocked|Entities in this state wanted to turn on (a sensor entity triggered) but were blocked because one or more `control_entites`/`state_entities` are already in an `on` state. Entity will return to idle state once all `control_entites` (or `state_entities`, if configured) return to `off` state|
 |constrained|Current time is outside of `start_time` and `end_time`. Entity is inactive until `start_time`|
 
 Note that, unless you specifically define `state_entities` in your configuration, that `control_entities == state_entities`.
@@ -227,9 +293,9 @@ soon_test_case:
   start_time: soon
   end_time: soon-after
 ```
-# About LightingSM 
+# About EntityController 
 
-`LightingSM` is a complete rewrite of the original application (version 0), using the Python `transitions` library to implement a [Finite State Machine](https://en.wikipedia.org/wiki/Finite-state_machine). This cleans up code logic considerably due to the nature of this application architecture.
+EntityController is a complete rewrite of the original application (version 0), using the Python `transitions` library to implement a [Finite State Machine](https://en.wikipedia.org/wiki/Finite-state_machine). This cleans up code logic considerably due to the nature of this application architecture.
 
 
 # Automatic updates

@@ -2,6 +2,91 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.2.0"></a>
+# [3.2.0](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v3.1.4...v3.2.0) (2019-03-04)
+
+
+### Bug Fixes
+
+* add True and False to state strings ([66d0931](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/commit/66d0931))
+
+
+### Features
+
+* **duration sensor:** updated config keys, added validations, added `sensor_resets_timer` and updated docs ([340e27d](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/commit/340e27d))
+
+
+
+<a name="3.1.4"></a>
+## [3.1.4](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v3.1.3...v3.1.4) (2019-03-03)
+
+
+### Bug Fixes
+
+* revert defective change ([bce14ae](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/commit/bce14ae))
+
+
+
+<a name="3.1.3"></a>
+## [3.1.3](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v3.1.2...v3.1.3) (2019-03-03)
+
+
+
+<a name="3.1.2"></a>
+## [3.1.2](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v3.1.1...v3.1.2) (2019-03-03)
+
+
+### Bug Fixes
+
+* Check that the block timer handle is not None before accessing attr. ([#38](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/issues/38)) ([2b36093](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/commit/2b36093))
+
+
+
+<a name="3.1.1"></a>
+## [3.1.1](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v3.1.0...v3.1.1) (2019-02-26)
+
+
+### Bug Fixes
+
+* **blocked mode:** amendment to block timeout restriction. Controller should turn off control entities when blocked mode is exited via block_timer expiry ([f9702f0](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/commit/f9702f0))
+
+
+
+<a name="3.1.0"></a>
+# [3.1.0](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v3.0.1...v3.1.0) (2019-02-26)
+
+
+### Features
+
+* **blocked mode:** add timeout to blocked mode such that the controller takes over after some time. ([9160879](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/commit/9160879))
+
+
+
+<a name="3.0.1"></a>
+## [3.0.1](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v3.0.0...v3.0.1) (2019-02-26)
+
+
+### Bug Fixes
+
+* **tracker:** update component name and location ([91e4950](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/commit/91e4950))
+
+
+
+<a name="3.0.0"></a>
+# [3.0.0](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v2.4.10...v3.0.0) (2019-02-26)
+
+
+### Chores
+
+* rename component, migrate to new directory/file format ([889d5cd](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/commit/889d5cd))
+
+
+### BREAKING CHANGES
+
+* component has been renamed to entity_controller and migrated to the new file/directory format. To update your configuration, hard-replace `lightingsm` with `entity_controller` in your configuration files and Lovelace config. The directory/file format change may require you go into your `custom_components` folder and manually remove the `lightingsm.py` file and create the new directory structure.
+
+
+
 <a name="2.4.10"></a>
 ## [2.4.10](https://gitlab.danielha.tk/HA/appdaemon-motion-lights/compare/v2.4.9...v2.4.10) (2019-02-11)
 
