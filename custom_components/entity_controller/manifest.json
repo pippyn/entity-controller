@@ -13,6 +13,7 @@
 	"codeowners": [
 		"@danobot"
 	],
+	"config_flow": true,
 	"homeassistant": "2022.7.4",
 	"version": "9.7.6"
 }
