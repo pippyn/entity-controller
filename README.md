@@ -3,34 +3,81 @@
 [![donate paypal](https://img.shields.io/badge/donate-PayPal-blue.svg?style=flat-square)](https://paypal.me/danielb160)
 [![donate gofundme](https://img.shields.io/badge/donate-GoFundMe-orange?style=flat-square)](https://gofund.me/7a2487d5)
 
+# Introduction
+Entity Controller (EC) is a finite-state-machine automation helper for Home Assistant.
 
-# :wave: Introduction
-Entity Controller (EC) is an implementation of "When This, Then That for x amount of time" using a finite state machine that ensures basic automations do not interfere with the rest of your home automation setup. This component encapsulates common automation scenarios into a neat package that can be configured easily and reused throughout your home. Traditional automations would need to be duplicated _for each instance_ in your config. The use cases for this component are endless because you can use any entity as input and outputs (there is no restriction to motion sensors and lights).
+Think of it as: "when sensor(s) are active, turn target entity/entities on, then handle timers, overrides, constraints, and state transitions safely."
+
+It helps avoid duplicated automation logic and gives you a reusable automation controller entity.
 
 [Entity Controller Documentation](https://danobot.github.io/ec-docs/)
 
 ## Installation
-EC is available in HACS store. Once installed, add the the following to your `configuration.yaml`, replacing the values for `sensor` and `entity` with one of your own. Reboot your Home Assistant server and you should have a motion controlled light that turns off after 5 seconds.
+1. Install **Entity Controller** from HACS.
+2. Restart Home Assistant.
+3. Go to **Settings -> Devices & Services -> Add Integration**.
+4. Search for **Entity Controller**.
+
+## Quick Start (UI Config Flow)
+The config flow has 2 steps.
+
+### Step 1: Basic
+Set at least:
+- `name`
+- `delay`
+- `sensors` (one or more sensor entities)
+- `entities` (one or more controlled entities)
+
+You can also pick devices via `sensor_devices` / `control_devices`; their entities are merged automatically.
+
+### Step 2: Advanced (optional)
+Optional settings include:
+- `service_data`, `service_data_off`
+- `night_mode`
+- transition `behaviours`
+- state interpretation lists (`*_states_*`, `state_strings_*`)
+- backoff options (`backoff`, `backoff_factor`, `backoff_max`)
+- debug/diagram options (`draw`, `image_prefix`, `image_path`, `day_length`)
+
+## YAML (legacy/import)
+YAML is still supported for compatibility and migration.
+
+Example:
+
+```yaml
+entity_controller:
+  motion_light:
+    sensor: binary_sensor.living_room_motion
+    entity: light.tv_led
+    delay: 5
 ```
-motion_light:
-  sensor: binary_sensor.living_room_motion
-  entity: light.tv_led
-  delay: 5
-```
-## :clapper: Video Demo
-I created the following video to give a high-level overview of all EC features, how they work and how you can configure them for your use cases.
+
+When YAML config is detected, it is imported into config entries.
+
+Notes:
+- UI flow uses plural keys: `sensors`, `entities`
+- legacy singular keys: `sensor`, `entity` are still accepted and merged
+
+## Editing Existing Controllers
+Use the integration **Configure** option (options flow) to edit an existing controller from the UI.
+
+## Troubleshooting
+- If field labels appear as raw keys (`sensors`, `entities`, etc.), do a full Home Assistant restart and hard-refresh the browser.
+- For debugging, enable debug logs for `custom_components.entity_controller`.
+
+## Video Demo
+I created the following video to give a high-level overview of EC features and common setup patterns.
 
 [![Video](images/video_thumbnail.png)](https://youtu.be/HJQrA6sFlPs)
 
 ## Support
-Maintaining and improving this integration is very time consuming because of the sheer number of supported use cases. If you use this component in your home please donate a few dollars or check the issue tracker to help with the investigation of defects or the implementation of new features. I would be happy to receive your pull request.
+Maintaining and improving this integration takes time. If it helps your setup, consider donating or helping triage/fix issues.
 
 [![donate paypal](https://img.shields.io/badge/donate-PayPal-blue.svg?style=flat-square)](https://paypal.me/danielb160)
 [![donate gofundme](https://img.shields.io/badge/donate-GoFundMe-orange?style=flat-square)](https://gofund.me/7a2487d5)
 
-# Contributions
-All contributions are welcome, including raising issues. Expect to be involved in the resolution of any issues. 
+## Contributions
+All contributions are welcome, including issues and pull requests.
 
-The `close-issue` bot is ruthless. Please provide all requested information to allow me to help you.
-
+Please include complete reproduction details when reporting bugs.
 
